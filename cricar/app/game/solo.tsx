@@ -20,7 +20,7 @@ export default function SoloScreen() {
   const [gameStarted, setGameStarted] = useState(false);
 
   const { user } = useAuthStore();
-  const { ownedCards, ownedPlayers } = useCollectionStore();
+  const { ownedPlayers } = useCollectionStore();
   const { session, matchContext, lastOutcome, selectedSkill, selectSkill, playBall, initSoloGame } = useGameStore();
 
   const startGame = () => {
@@ -35,7 +35,7 @@ export default function SoloScreen() {
       teamId: 'human',
       role: player.role === 'bowler' ? 'bowler' : 'batsman',
       stamina: 100,
-      stats: { runs: 0, balls: 0, wickets: 0, overs: 0, economy: 0 },
+   stats: { runs: 0, ballsFaced: 0, fours: 0, sixes: 0, wicketsTaken: 0, oversBowled: 0, runsConceded: 0, catches: 0, runOuts: 0 },
       isAI: false,
     }, difficulty as any, overs);
     setGameStarted(true);
@@ -43,8 +43,7 @@ export default function SoloScreen() {
 
   const handlePlayBall = () => {
     if (!selectedSkill) { Alert.alert('Select a skill first!'); return; }
-    const outcome = playBall();
-    if (!outcome) return;
+    playBall();
   };
 
   if (!gameStarted) {
@@ -53,7 +52,7 @@ export default function SoloScreen() {
         <Text style={gs.title}>Solo Match Setup</Text>
 
         <Text style={gs.sectionLabel}>Difficulty</Text>
-        {DIFFICULTIES.map((d) => (
+        {DIFFICULTIES.map(d => (
           <TouchableOpacity key={d.id} onPress={() => setDifficulty(d.id)}
             style={[gs.option, difficulty === d.id && gs.optionSelected]}>
             <Text style={gs.optionTitle}>{d.label}</Text>
@@ -63,7 +62,7 @@ export default function SoloScreen() {
 
         <Text style={gs.sectionLabel}>Overs</Text>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          {OVER_LIMITS.map((o) => (
+          {OVER_LIMITS.map(o => (
             <TouchableOpacity key={o} onPress={() => setOvers(o)}
               style={[gs.overBtn, overs === o && gs.overBtnSelected]}>
               <Text style={[gs.overBtnText, overs === o && { color: '#1a1a2e' }]}>{o}</Text>
@@ -103,7 +102,7 @@ export default function SoloScreen() {
 
       <Text style={gs.skillsLabel}>Select Your Shot:</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={gs.skillsRow}>
-        {skills.length > 0 ? skills.map((skill) => (
+        {skills.length > 0 ? skills.map(skill => (
           <TouchableOpacity key={skill.id} onPress={() => selectSkill(skill)}
             style={[gs.skillBtn, selectedSkill?.id === skill.id && gs.skillSelected,
                     skill.staminaCost > matchContext.batsmanStamina && gs.skillDisabled]}>
@@ -155,4 +154,3 @@ const gs = StyleSheet.create({
   playBtn: { backgroundColor: '#f4a261', margin: 16, borderRadius: 14, padding: 18, alignItems: 'center' },
   playBtnText: { color: '#1a1a2e', fontSize: 20, fontWeight: 'bold' },
 });
-
