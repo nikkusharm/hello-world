@@ -161,7 +161,7 @@ dependencies {
 
     if (isGifEnabled) {
         // For animated gif support
-        implementation("com.facebook.fresco:animated-gif:${expoLibs.versions.fresco.get()}")
+        implementation("com.facebook.fresco:animated-gif:3.0.0")
     }
 
     if (isWebpEnabled) {
@@ -173,7 +173,7 @@ dependencies {
         }
     }
 
-    if (hermesEnabled.toBoolean()) {
+   if ((findProperty('expo.jsEngine') ?: 'hermes') == 'hermes') {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
