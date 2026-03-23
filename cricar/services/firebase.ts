@@ -1,32 +1,33 @@
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import database from '@react-native-firebase/database';
-import messaging from '@react-native-firebase/messaging';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import {
+  getFirestore, collection
+} from 'firebase/firestore';
+import { getDatabase, ref } from 'firebase/database';
 
-// Firestore collection references
-export const usersCollection = firestore().collection('users');
-export const cardsCollection = firestore().collection('cards');
-export const sessionsCollection = firestore().collection('sessions');
-export const playersCollection = firestore().collection('players');
-export const packsCollection = firestore().collection('packs');
-export const tournamentsCollection = firestore().collection('tournaments');
+const firebaseConfig = {
+  apiKey:            process.env.EXPO_PUBLIC_FIREBASE_API_KEY            || 'your-api-key',
+  authDomain:        process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN        || 'your-project.firebaseapp.com',
+  projectId:         process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID         || 'your-project-id',
+  storageBucket:     process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET     || 'your-project.appspot.com',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID|| 'your-sender-id',
+  appId:             process.env.EXPO_PUBLIC_FIREBASE_APP_ID             || 'your-app-id',
+  databaseURL:       process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL       || 'https://your-project-default-rtdb.firebaseio.com',
+};
 
-// Realtime Database references
-export const matchRoomsRef = database().ref('matchRooms');
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const firebaseAuth = getAuth(app);
+export const db = getFirestore(app);
+export const rtdb = getDatabase(app);
 
-// Auth instance
-export const firebaseAuth = auth();
+export const usersCollection       = collection(db, 'users');
+export const cardsCollection       = collection(db, 'cards');
+export const sessionsCollection    = collection(db, 'sessions');
+export const playersCollection     = collection(db, 'players');
+export const packsCollection       = collection(db, 'packs');
+export const tournamentsCollection = collection(db, 'tournaments');
 
-// Firestore instance
-export const db = firestore();
-
-// Messaging instance
-export const firebaseMessaging = messaging();
-
-// Initialize Firestore settings
-firestore().settings({
-  cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
-});
+export const matchRoomsRef = ref(rtdb, 'matchRooms');
 
 export interface UserDocument {
   email: string;
@@ -38,48 +39,29 @@ export interface UserDocument {
   activeSessionId: string;
   tournamentIds: string[];
   pushToken: string;
-  createdAt: Date;
+  createdAt: any;
 }
 
 export async function createUserDocument(
-  userId: string,
-  email: string,
-  displayName: string,
-  username: string
+  userId: string, email: string, displayName: string, username: string
 ): Promise<void> {
-  await usersCollection.doc(userId).set({
-    email,
-    displayName,
-    username,
-    ownedCards: [],
-    ownedPacks: [],
-    unlockedYears: {},
-    activeSessionId: '',
-    tournamentIds: [],
-    pushToken: '',
-    createdAt: firestore.FieldValue.serverTimestamp(),
+  const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+  await setDoc(doc(db, 'users', userId), {
+    email, displayName, username,
+    ownedCards: [], ownedPacks: [], unlockedYears: {},
+    activeSessionId: '', tournamentIds: [], pushToken: '',
+    createdAt: serverTimestamp(),
   });
 }
 
 export async function getUserDocument(userId: string): Promise<UserDocument | null> {
-  const doc = await usersCollection.doc(userId).get();
-  if (!doc.exists) return null;
-  return doc.data() as UserDocument;
+  const { doc, getDoc } = await import('firebase/firestore');
+  const snap = await getDoc(doc(db, 'users', userId));
+  if (!snap.exists()) return null;
+  return snap.data() as UserDocument;
 }
 
 export async function updateUserPushToken(userId: string, token: string): Promise<void> {
-  await usersCollection.doc(userId).update({ pushToken: token });
-}
-
-export async function requestNotificationPermission(): Promise<string | null> {
-  const authStatus = await messaging().requestPermission();
-  const enabled =
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-  if (enabled) {
-    const token = await messaging().getToken();
-    return token;
-  }
-  return null;
+  const { doc, updateDoc } = await import('firebase/firestore');
+  await updateDoc(doc(db, 'users', userId), { pushToken: token });
 }

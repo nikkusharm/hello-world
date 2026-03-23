@@ -1,4 +1,4 @@
-import firestore from '@react-native-firebase/firestore';
+import { doc, getDoc, getDocs, addDoc, updateDoc, query, where, limit, arrayUnion, serverTimestamp, runTransaction } from 'firebase/firestore'; import { db } from './firebase';
 import { tournamentsCollection } from './firebase';
 import {
   Tournament,
@@ -228,3 +228,4 @@ export async function advanceKnockoutBracket(
     status: isComplete ? 'complete' : 'active',
   });
 }
+

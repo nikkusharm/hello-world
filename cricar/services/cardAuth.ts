@@ -1,4 +1,4 @@
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc, getDocs, addDoc, collection, updateDoc, query, where, limit, arrayUnion, serverTimestamp, runTransaction } from 'firebase/firestore'; import { db } from './firebase';
 import { cardsCollection, usersCollection, sessionsCollection, tournamentsCollection } from './firebase';
 import { Card } from '../types/card';
 import { LockResult } from '../types/match';
@@ -98,7 +98,7 @@ export async function lockAvatar(
   playerId: string,
   userId: string
 ): Promise<LockResult> {
-  const db = firestore();
+  const db = getFirestore();
 
   return await db.runTransaction(async (transaction) => {
     const sessionRef = sessionsCollection.doc(sessionId);
@@ -141,7 +141,7 @@ export async function lockAvatarForTournament(
   teamId: string,
   userId: string
 ): Promise<LockResult> {
-  const db = firestore();
+  const db = getFirestore();
 
   return await db.runTransaction(async (transaction) => {
     const tournamentRef = tournamentsCollection.doc(tournamentId);
@@ -184,3 +184,4 @@ export async function releaseAllTournamentLocks(tournamentId: string): Promise<v
     avatarUserMap: {},
   });
 }
+

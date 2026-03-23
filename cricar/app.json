@@ -11,17 +11,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A1128"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cricar.app",
-      "infoPlist": {
-        "NSCameraUsageDescription": "CricAR needs camera access to scan cards and display AR cricket pitch",
-        "NSBluetoothAlwaysUsageDescription": "CricAR uses Bluetooth to connect with nearby players",
-        "NSBluetoothPeripheralUsageDescription": "CricAR uses Bluetooth to host and join local matches",
-        "NSLocalNetworkUsageDescription": "CricAR uses local network to find nearby matches",
-        "NFCReaderUsageDescription": "CricAR uses NFC to verify premium legend cards"
-      }
+      "bundleIdentifier": "com.cricar.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,30 +26,22 @@
       "package": "com.cricar.app",
       "permissions": [
         "CAMERA",
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_ADVERTISE",
-        "ACCESS_FINE_LOCATION",
-        "NFC",
-        "INTERNET"
+        "INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
       "expo-router",
-      "expo-camera",
-      "expo-barcode-scanner",
-      [
-        "react-native-ble-plx",
-        { "isBackgroundEnabled": false, "neverForLocation": true }
-      ],
-      "react-native-nfc-manager"
+      "expo-camera"
     ],
     "scheme": "cricar",
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "9ff8eb9f-b743-4866-a20e-ef1056310447"
       }
     }
   }

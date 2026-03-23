@@ -190,3 +190,4 @@ function getAISkillPool(role: 'batsman' | 'bowler'): Skill[] {
     { id: 'defence', name: 'Solid Defence', type: 'batting', power: 5, risk: 1, staminaCost: 5, animation: 'defence_anim', unlockYear: 2000, description: 'Defensive block' },
   ];
 }
+

@@ -1,5 +1,5 @@
 import { usersCollection, cardsCollection } from './firebase';
-import firestore from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDoc, getDocs, addDoc, collection, updateDoc, query, where, limit, arrayUnion, serverTimestamp, runTransaction } from 'firebase/firestore'; import { db } from './firebase';
 
 interface PaymentResult {
   success: boolean;
@@ -19,7 +19,7 @@ export async function getUpgradeInfo(
   packId: string,
   userId: string
 ): Promise<UpgradeInfo | null> {
-  const packDoc = await firestore().collection('packs').doc(packId).get();
+  const packDoc = await getFirestore().collection('packs').doc(packId).get();
   if (!packDoc.exists) return null;
 
   const pack = packDoc.data()!;
@@ -33,7 +33,7 @@ export async function getUpgradeInfo(
   let totalNewSkills = 0;
 
   for (const playerId of pack.playerIds) {
-    const playerDoc = await firestore().collection('players').doc(playerId).get();
+    const playerDoc = await getFirestore().collection('players').doc(playerId).get();
     if (!playerDoc.exists) continue;
     const playerData = playerDoc.data()!;
     const skillsByYear = playerData.skillsByYear || {};
@@ -102,7 +102,7 @@ export async function processUpgradePayment(
     while (elapsed < timeout) {
       const userDoc = await usersCollection.doc(userId).get();
       const unlockedYears = userDoc.data()?.unlockedYears || {};
-      const packDoc = await firestore().collection('packs').doc(packId).get();
+      const packDoc = await getFirestore().collection('packs').doc(packId).get();
       const packYear = packDoc.data()?.year;
 
       if (unlockedYears[packId] >= packYear) {
@@ -137,7 +137,7 @@ export async function initiateTransfer(
     }
 
     // Create transfer request document
-    await firestore().collection('transferRequests').add({
+    await getFirestore().collection('transferRequests').add({
       serial,
       fromUserId: card.ownerId,
       toUserId: requestingUserId,
@@ -157,3 +157,4 @@ export async function initiateTransfer(
     };
   }
 }
+

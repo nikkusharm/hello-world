@@ -1,136 +1,45 @@
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Dimensions,
-  ViewToken,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { router } from 'expo-router';
-import Button from '../../components/ui/Button';
-import { COLORS } from '../../constants/gameConfig';
 
 const { width } = Dimensions.get('window');
 
-interface OnboardingSlide {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-}
-
-const SLIDES: OnboardingSlide[] = [
-  {
-    id: '1',
-    title: 'Scan Your Cards',
-    description:
-      'Point your camera at any CricAR card to activate your cricketer and unlock their skills. Each card is unique and tied to your account.',
-    icon: '📸',
-  },
-  {
-    id: '2',
-    title: 'Play in AR',
-    description:
-      'Watch your cricketers come alive on any flat surface. Bowl, bat, and field in augmented reality with real physics-based outcomes.',
-    icon: '🏏',
-  },
-  {
-    id: '3',
-    title: 'Compete & Collect',
-    description:
-      'Challenge friends in 1v1, build teams for multiplayer matches, enter tournaments, and grow your collection with new season packs.',
-    icon: '🏆',
-  },
-];
-
 export default function OnboardingScreen() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index != null) {
-        setCurrentIndex(viewableItems[0].index);
-      }
-    }
-  ).current;
-
-  function handleNext() {
-    if (currentIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-    } else {
-      router.replace('/(tabs)/scan');
-    }
-  }
-
-  function handleSkip() {
-    router.replace('/(tabs)/scan');
-  }
-
-  function renderSlide({ item }: { item: OnboardingSlide }) {
-    return (
-      <View style={styles.slide}>
-        <Text style={styles.icon}>{item.icon}</Text>
-        <Text style={styles.slideTitle}>{item.title}</Text>
-        <Text style={styles.slideDescription}>{item.description}</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={SLIDES}
-        renderItem={renderSlide}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-      />
+      <View style={styles.hero}>
+        <Text style={styles.emoji}>🏏</Text>
+        <Text style={styles.title}>CricAR</Text>
+        <Text style={styles.subtitle}>Scan cricket cards.{'\n'}Play AR matches.</Text>
+      </View>
 
-      <View style={styles.footer}>
-        <View style={styles.dots}>
-          {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                index === currentIndex && styles.dotActive,
-              ]}
-            />
-          ))}
-        </View>
+      <View style={styles.features}>
+        {[
+          { icon: '📸', text: 'Scan physical cards to unlock player avatars' },
+          { icon: '🏟️', text: 'Play on an AR pitch in your living room' },
+          { icon: '⚡', text: 'Use real player skills and stats' },
+          { icon: '🌐', text: 'Challenge friends online or nearby' },
+        ].map((f, i) => (
+          <View key={i} style={styles.featureRow}>
+            <Text style={styles.featureIcon}>{f.icon}</Text>
+            <Text style={styles.featureText}>{f.text}</Text>
+          </View>
+        ))}
+      </View>
 
-        <View style={styles.buttons}>
-          {currentIndex < SLIDES.length - 1 ? (
-            <>
-              <Button
-                title="Skip"
-                onPress={handleSkip}
-                variant="ghost"
-                size="medium"
-              />
-              <Button
-                title="Next"
-                onPress={handleNext}
-                variant="primary"
-                size="medium"
-              />
-            </>
-          ) : (
-            <Button
-              title="Get Started"
-              onPress={handleNext}
-              variant="primary"
-              size="large"
-              style={styles.getStartedButton}
-            />
-          )}
-        </View>
+      <View style={styles.buttons}>
+        <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() => router.push('/(auth)/register')}
+        >
+          <Text style={styles.primaryBtnText}>Get Started</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => router.push('/(auth)/login')}
+        >
+          <Text style={styles.secondaryBtnText}>I already have an account</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -139,58 +48,77 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  slide: {
-    width,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  icon: {
-    fontSize: 80,
-    marginBottom: 32,
-  },
-  slideTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  slideDescription: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  footer: {
+    backgroundColor: '#1a1a2e',
     paddingHorizontal: 24,
-    paddingBottom: 48,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
-  dots: {
-    flexDirection: 'row',
+  hero: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  emoji: {
+    fontSize: 72,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#f4a261',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 26,
+  },
+  features: {
+    flex: 1,
     justifyContent: 'center',
-    marginBottom: 24,
-    gap: 8,
+    gap: 16,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.border,
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#16213e',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
   },
-  dotActive: {
-    backgroundColor: COLORS.primaryLight,
-    width: 24,
+  featureIcon: {
+    fontSize: 24,
+  },
+  featureText: {
+    color: '#cccccc',
+    fontSize: 15,
+    flex: 1,
   },
   buttons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  primaryBtn: {
+    backgroundColor: '#f4a261',
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
   },
-  getStartedButton: {
-    flex: 1,
+  primaryBtnText: {
+    color: '#1a1a2e',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  secondaryBtn: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f4a261',
+  },
+  secondaryBtnText: {
+    color: '#f4a261',
+    fontSize: 16,
   },
 });
+

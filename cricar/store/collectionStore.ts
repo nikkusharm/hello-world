@@ -60,3 +60,4 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     return get().ownedPlayers.find((p) => p.id === card.playerId);
   },
 }));
+

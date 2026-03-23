@@ -1,164 +1,61 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useCollectionStore } from '../../store/collectionStore';
-import Button from '../../components/ui/Button';
-import { COLORS } from '../../constants/gameConfig';
 
-export default function ProfileTab() {
-  const { user, userDoc, signOut, isLoading } = useAuthStore();
+export default function ProfileScreen() {
+  const { user, signOut } = useAuthStore();
   const { ownedCards } = useCollectionStore();
 
-  async function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+  const handleSignOut = () => {
+    Alert.alert('Sign Out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
+      { text: 'Sign Out', style: 'destructive', onPress: async () => {
+        await signOut();
+        router.replace('/(auth)/onboarding');
+      }},
     ]);
-  }
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.profileHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {(userDoc?.displayName || user?.email || '?')[0].toUpperCase()}
-          </Text>
-        </View>
-        <Text style={styles.displayName}>{userDoc?.displayName || 'Player'}</Text>
-        <Text style={styles.username}>@{userDoc?.username || 'unknown'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarEmoji}>🏏</Text>
       </View>
+      <Text style={styles.name}>{user?.email?.split('@')[0] || 'Cricketer'}</Text>
+      <Text style={styles.email}>{user?.email}</Text>
 
       <View style={styles.stats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{ownedCards.length}</Text>
-          <Text style={styles.statLabel}>Cards</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{userDoc?.tournamentIds?.length || 0}</Text>
-          <Text style={styles.statLabel}>Tournaments</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{userDoc?.ownedPacks?.length || 0}</Text>
-          <Text style={styles.statLabel}>Packs</Text>
-        </View>
+        {[
+          { label: 'Cards', value: ownedCards.length.toString() },
+          { label: 'Matches', value: '0' },
+          { label: 'Wins', value: '0' },
+        ].map((s, i) => (
+          <View key={i} style={styles.stat}>
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Notification Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Transfer History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Payment History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Help & Support</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Button
-        title="Sign Out"
-        onPress={handleSignOut}
-        variant="outline"
-        loading={isLoading}
-        style={styles.signOutButton}
-      />
+      <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 20,
-  },
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  displayName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  username: {
-    fontSize: 14,
-    color: COLORS.primaryLight,
-    marginTop: 2,
-  },
-  email: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  stats: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-  },
-  actions: {
-    gap: 2,
-    marginBottom: 24,
-  },
-  menuItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  menuText: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  signOutButton: {
-    marginTop: 'auto',
-    borderColor: COLORS.error,
-  },
+  container: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', padding: 24, paddingTop: 48 },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#16213e', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: '#f4a261' },
+  avatarEmoji: { fontSize: 48 },
+  name: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  email: { color: '#888', fontSize: 14, marginBottom: 32 },
+  stats: { flexDirection: 'row', gap: 24, marginBottom: 40 },
+  stat: { alignItems: 'center', backgroundColor: '#16213e', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 16, minWidth: 80 },
+  statValue: { color: '#f4a261', fontSize: 28, fontWeight: 'bold' },
+  statLabel: { color: '#aaa', fontSize: 12, marginTop: 4 },
+  signOutBtn: { backgroundColor: '#9b2226', borderRadius: 12, paddingHorizontal: 40, paddingVertical: 14, marginTop: 'auto' },
+  signOutText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
+

@@ -110,3 +110,4 @@ export const SAMPLE_PLAYERS: Player[] = [
     isLegacy: true,
   },
 ];
+

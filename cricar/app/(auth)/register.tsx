@@ -1,189 +1,97 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
-import Button from '../../components/ui/Button';
-import { COLORS } from '../../constants/gameConfig';
 
 export default function RegisterScreen() {
-  const [displayName, setDisplayName] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirm, setConfirm] = useState('');
+  const [username, setUsername] = useState('');
+  const { signUp, loading, error } = useAuthStore();
 
-  const { signUpWithEmail, isLoading, error, clearError } = useAuthStore();
-
-  function validate(): boolean {
-    const newErrors: Record<string, string> = {};
-
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
+  const handleRegister = async () => {
+    if (!email || !password || !username) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
     }
-
-    if (!username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+    if (password !== confirm) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!emailRegex.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
     }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  async function handleRegister() {
-    clearError();
-    if (!validate()) return;
-
-    try {
-      await signUpWithEmail(email, password, displayName, username.toLowerCase());
-      router.replace('/(auth)/onboarding');
-    } catch {
-      // Error is handled by the store
-    }
-  }
-
-  function renderInput(
-    label: string,
-    value: string,
-    onChangeText: (t: string) => void,
-    field: string,
-    options?: {
-      placeholder?: string;
-      secureTextEntry?: boolean;
-      keyboardType?: 'default' | 'email-address';
-      autoCapitalize?: 'none' | 'sentences' | 'words';
-    }
-  ) {
-    return (
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput
-          style={[styles.input, errors[field] ? styles.inputError : null]}
-          placeholder={options?.placeholder || ''}
-          placeholderTextColor={COLORS.textSecondary}
-          value={value}
-          onChangeText={(text) => {
-            onChangeText(text);
-            if (errors[field]) {
-              setErrors((prev) => {
-                const next = { ...prev };
-                delete next[field];
-                return next;
-              });
-            }
-          }}
-          secureTextEntry={options?.secureTextEntry}
-          keyboardType={options?.keyboardType || 'default'}
-          autoCapitalize={options?.autoCapitalize ?? 'sentences'}
-          editable={!isLoading}
-        />
-        {errors[field] ? (
-          <Text style={styles.errorText}>{errors[field]}</Text>
-        ) : null}
-      </View>
-    );
-  }
+    await signUp(email, password);
+    if (!error) router.replace('/(tabs)/scan');
+  };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the AR cricket revolution</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>🏏 Join CricAR</Text>
+        <Text style={styles.subtitle}>Create your account to start playing</Text>
+
+        {error && <Text style={styles.error}>{error}</Text>}
 
         <View style={styles.form}>
-          {renderInput('Display Name', displayName, setDisplayName, 'displayName', {
-            placeholder: 'Your name',
-            autoCapitalize: 'words',
-          })}
-
-          {renderInput('Username', username, setUsername, 'username', {
-            placeholder: 'Choose a username',
-            autoCapitalize: 'none',
-          })}
-
-          {renderInput('Email', email, setEmail, 'email', {
-            placeholder: 'you@example.com',
-            keyboardType: 'email-address',
-            autoCapitalize: 'none',
-          })}
-
-          {renderInput('Password', password, setPassword, 'password', {
-            placeholder: 'At least 6 characters',
-            secureTextEntry: true,
-          })}
-
-          {renderInput(
-            'Confirm Password',
-            confirmPassword,
-            setConfirmPassword,
-            'confirmPassword',
-            {
-              placeholder: 'Re-enter password',
-              secureTextEntry: true,
-            }
-          )}
-
-          {error ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{error}</Text>
-            </View>
-          ) : null}
-
-          <Button
-            title="Create Account"
-            onPress={handleRegister}
-            loading={isLoading}
-            disabled={isLoading}
-            size="large"
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            placeholderTextColor="#666"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#666"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#666"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            placeholderTextColor="#666"
+            value={confirm}
+            onChangeText={setConfirm}
+            secureTextEntry
           />
 
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.linkContainer}
-            disabled={isLoading}
+            style={styles.primaryBtn}
+            onPress={handleRegister}
+            disabled={loading}
           >
-            <Text style={styles.linkText}>
-              Already have an account?{' '}
-              <Text style={styles.linkHighlight}>Sign In</Text>
-            </Text>
+            {loading
+              ? <ActivityIndicator color="#1a1a2e" />
+              : <Text style={styles.primaryBtnText}>Create Account</Text>
+            }
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkBtn}
+            onPress={() => router.push('/(auth)/login')}
+          >
+            <Text style={styles.linkText}>Already have an account? Sign In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -192,79 +100,16 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 8,
-  },
-  form: {
-    gap: 14,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  input: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  inputError: {
-    borderColor: COLORS.error,
-  },
-  errorText: {
-    fontSize: 12,
-    color: COLORS.error,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(239, 83, 80, 0.15)',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: COLORS.error,
-  },
-  errorBannerText: {
-    color: COLORS.error,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  linkContainer: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  linkText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  linkHighlight: {
-    color: COLORS.primaryLight,
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: '#1a1a2e' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', paddingVertical: 40 },
+  title: { fontSize: 32, fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: '#aaaaaa', textAlign: 'center', marginBottom: 32 },
+  error: { color: '#ff6b6b', textAlign: 'center', marginBottom: 16, backgroundColor: '#2d1b1b', padding: 12, borderRadius: 8 },
+  form: { gap: 16 },
+  input: { backgroundColor: '#16213e', borderRadius: 12, padding: 16, color: '#ffffff', fontSize: 16, borderWidth: 1, borderColor: '#333' },
+  primaryBtn: { backgroundColor: '#f4a261', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
+  primaryBtnText: { color: '#1a1a2e', fontSize: 18, fontWeight: 'bold' },
+  linkBtn: { alignItems: 'center', padding: 8 },
+  linkText: { color: '#f4a261', fontSize: 15 },
 });
+

@@ -60,3 +60,4 @@ export async function searchPlayers(query: string): Promise<Player[]> {
     .get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Player);
 }
+

@@ -1,505 +1,158 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { router } from 'expo-router';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useGameStore } from '../../store/gameStore';
-import Button from '../../components/ui/Button';
-import { COLORS, GAME_CONFIG } from '../../constants/gameConfig';
-import { AIDifficulty, BallOutcome, Skill } from '../../types/game';
-import { SessionPlayer } from '../../types/match';
+import { useCollectionStore } from '../../store/collectionStore';
+import { useAuthStore } from '../../store/authStore';
+import { Skill } from '../../types/game';
 
-interface DifficultyOption {
-  level: AIDifficulty;
-  name: string;
-  description: string;
-  icon: string;
-}
-
-const DIFFICULTIES: DifficultyOption[] = [
-  {
-    level: 'rookie',
-    name: 'Rookie',
-    description: 'Random skill selection, no pattern awareness. Perfect for beginners.',
-    icon: '🟢',
-  },
-  {
-    level: 'club',
-    name: 'Club',
-    description: 'Picks highest power skills. Predictable but competent.',
-    icon: '🟡',
-  },
-  {
-    level: 'international',
-    name: 'International',
-    description: 'Tracks your last 3 balls and counters patterns. Saves stamina smartly.',
-    icon: '🟠',
-  },
-  {
-    level: 'legend',
-    name: 'Legend',
-    description: 'Full pattern recognition. Learns your habits and exploits them.',
-    icon: '🔴',
-  },
+const DIFFICULTIES = [
+  { id: 'rookie', label: '🟢 Rookie', desc: 'Random AI — great for beginners' },
+  { id: 'club', label: '🟡 Club', desc: 'AI picks highest power skill' },
+  { id: 'international', label: '🟠 International', desc: 'AI counters your last 3 balls' },
+  { id: 'legend', label: '🔴 Legend', desc: 'AI learns your patterns across the match' },
 ];
 
-type Phase = 'setup' | 'playing' | 'innings_break' | 'result';
+const OVER_LIMITS = [5, 10, 20];
 
-export default function SoloGameScreen() {
-  const [phase, setPhase] = useState<Phase>('setup');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<AIDifficulty>('rookie');
-  const [selectedOvers, setSelectedOvers] = useState(5);
+export default function SoloScreen() {
+  const [difficulty, setDifficulty] = useState('club');
+  const [overs, setOvers] = useState(5);
+  const [gameStarted, setGameStarted] = useState(false);
 
-  const {
-    session,
-    matchContext,
-    selectedSkill,
-    lastOutcome,
-    initSoloGame,
-    selectSkill,
-    playBall,
-    endInnings,
-    resetGame,
-  } = useGameStore();
+  const { user } = useAuthStore();
+  const { ownedCards, ownedPlayers } = useCollectionStore();
+  const { session, matchContext, lastOutcome, selectedSkill, selectSkill, playBall, initSoloGame } = useGameStore();
 
-  // Demo player data — in production this comes from scanned card
-  const demoPlayer: SessionPlayer = {
-    userId: 'demo_user',
-    playerId: 'virat_kohli_2023',
-    teamId: 'human',
-    role: 'batsman',
-    stamina: 100,
-    stats: {
-      runs: 0, ballsFaced: 0, fours: 0, sixes: 0,
-      wicketsTaken: 0, oversBowled: 0, runsConceded: 0,
-      catches: 0, runOuts: 0,
-    },
-    isAI: false,
-  };
-
-  // Demo skills — in production these come from the player's card
-  const availableSkills: Skill[] = [
-    { id: 'cover_drive', name: 'Cover Drive', type: 'batting', power: 7, risk: 3, staminaCost: 10, animation: 'cover_drive_anim', unlockYear: 2023, description: 'Classic cover drive' },
-    { id: 'pull_shot', name: 'Pull Shot', type: 'batting', power: 8, risk: 6, staminaCost: 20, animation: 'pull_anim', unlockYear: 2023, description: 'Aggressive pull' },
-    { id: 'defence', name: 'Solid Defence', type: 'batting', power: 5, risk: 1, staminaCost: 5, animation: 'defence_anim', unlockYear: 2023, description: 'Defensive block' },
-    { id: 'helicopter_shot', name: 'Helicopter Shot', type: 'batting', power: 9, risk: 7, staminaCost: 25, animation: 'helicopter_anim', unlockYear: 2023, description: 'Trademark finish' },
-    { id: 'sweep', name: 'Sweep Shot', type: 'batting', power: 7, risk: 5, staminaCost: 15, animation: 'sweep_anim', unlockYear: 2023, description: 'Sweep against spin' },
-  ];
-
-  function startGame() {
-    initSoloGame(demoPlayer, selectedDifficulty, selectedOvers);
-    setPhase('playing');
-  }
-
-  function handlePlayBall() {
-    if (!selectedSkill) {
-      Alert.alert('Select a Skill', 'Choose a batting skill before playing the ball.');
+  const startGame = () => {
+    if (ownedPlayers.length === 0) {
+      Alert.alert('No Cards', 'Scan a cricket card first to play!');
       return;
     }
+    const player = ownedPlayers[0];
+    initSoloGame({
+      userId: user?.uid || 'guest',
+      playerId: player.id,
+      teamId: 'human',
+      role: player.role === 'bowler' ? 'bowler' : 'batsman',
+      stamina: 100,
+      stats: { runs: 0, balls: 0, wickets: 0, overs: 0, economy: 0 },
+      isAI: false,
+    }, difficulty as any, overs);
+    setGameStarted(true);
+  };
+
+  const handlePlayBall = () => {
+    if (!selectedSkill) { Alert.alert('Select a skill first!'); return; }
     const outcome = playBall();
     if (!outcome) return;
+  };
 
-    // Check if innings is over
-    if (matchContext.ballsLeft <= 0 || matchContext.wicketsLeft <= 0) {
-      if (session && session.currentInning === 0) {
-        setPhase('innings_break');
-      } else {
-        setPhase('result');
-      }
-    }
-  }
-
-  function handleEndInnings() {
-    endInnings();
-    setPhase('playing');
-  }
-
-  function getOutcomeColor(outcome?: BallOutcome): string {
-    if (!outcome) return COLORS.text;
-    switch (outcome.outcome) {
-      case 'six': return '#FFD700';
-      case 'four': return '#4CAF50';
-      case 'wicket': return '#EF5350';
-      case 'dot': return '#78909C';
-      default: return COLORS.text;
-    }
-  }
-
-  // SETUP PHASE
-  if (phase === 'setup') {
+  if (!gameStarted) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.setupContent}>
-        <Text style={styles.sectionTitle}>Select Difficulty</Text>
-        {DIFFICULTIES.map((diff) => (
-          <TouchableOpacity
-            key={diff.level}
-            style={[
-              styles.difficultyCard,
-              selectedDifficulty === diff.level && styles.difficultySelected,
-            ]}
-            onPress={() => setSelectedDifficulty(diff.level)}
-          >
-            <Text style={styles.difficultyIcon}>{diff.icon}</Text>
-            <View style={styles.difficultyInfo}>
-              <Text style={styles.difficultyName}>{diff.name}</Text>
-              <Text style={styles.difficultyDesc}>{diff.description}</Text>
-            </View>
+      <ScrollView style={gs.container} contentContainerStyle={{ padding: 20, gap: 16 }}>
+        <Text style={gs.title}>Solo Match Setup</Text>
+
+        <Text style={gs.sectionLabel}>Difficulty</Text>
+        {DIFFICULTIES.map((d) => (
+          <TouchableOpacity key={d.id} onPress={() => setDifficulty(d.id)}
+            style={[gs.option, difficulty === d.id && gs.optionSelected]}>
+            <Text style={gs.optionTitle}>{d.label}</Text>
+            <Text style={gs.optionDesc}>{d.desc}</Text>
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Overs</Text>
-        <View style={styles.oversRow}>
-          {GAME_CONFIG.OVER_OPTIONS.map((overs) => (
-            <TouchableOpacity
-              key={overs}
-              style={[
-                styles.overOption,
-                selectedOvers === overs && styles.overSelected,
-              ]}
-              onPress={() => setSelectedOvers(overs)}
-            >
-              <Text
-                style={[
-                  styles.overText,
-                  selectedOvers === overs && styles.overTextSelected,
-                ]}
-              >
-                {overs}
-              </Text>
+        <Text style={gs.sectionLabel}>Overs</Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          {OVER_LIMITS.map((o) => (
+            <TouchableOpacity key={o} onPress={() => setOvers(o)}
+              style={[gs.overBtn, overs === o && gs.overBtnSelected]}>
+              <Text style={[gs.overBtnText, overs === o && { color: '#1a1a2e' }]}>{o}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Button
-          title="Start Match"
-          onPress={startGame}
-          size="large"
-          style={{ marginTop: 32 }}
-        />
+        <TouchableOpacity style={gs.startBtn} onPress={startGame}>
+          <Text style={gs.startBtnText}>Start Match →</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
 
-  // PLAYING PHASE
-  if (phase === 'playing' && session) {
-    const currentInning = session.innings[session.currentInning];
-    const isSecondInnings = session.currentInning === 1;
-    const target = isSecondInnings ? session.innings[0].totalRuns + 1 : undefined;
+  const currentInning = session?.innings[session.currentInning];
+  const player = ownedPlayers[0];
+  const skills: Skill[] = player?.skills || [];
 
-    return (
-      <View style={styles.container}>
-        <View style={styles.scoreboard}>
-          <Text style={styles.scoreText}>
-            {currentInning.totalRuns}/{currentInning.totalWickets}
-          </Text>
-          <Text style={styles.oversText}>
-            Overs: {Math.floor((selectedOvers * 6 - matchContext.ballsLeft) / 6)}.
-            {(selectedOvers * 6 - matchContext.ballsLeft) % 6}/{selectedOvers}
-          </Text>
-          {target && (
-            <Text style={styles.targetText}>
-              Target: {target} | Need: {target - currentInning.totalRuns} from{' '}
-              {matchContext.ballsLeft} balls
-            </Text>
-          )}
-          <Text style={styles.staminaText}>
-            Stamina: {Math.round(matchContext.batsmanStamina)}%
+  return (
+    <View style={gs.container}>
+      <View style={gs.scoreboard}>
+        <Text style={gs.score}>{currentInning?.totalRuns || 0}/{currentInning?.totalWickets || 0}</Text>
+        <Text style={gs.overs}>Overs: {matchContext.totalOvers - Math.ceil(matchContext.ballsLeft / 6)}/{matchContext.totalOvers}</Text>
+        <Text style={gs.stamina}>Stamina: {matchContext.batsmanStamina}%</Text>
+      </View>
+
+      {lastOutcome && (
+        <View style={gs.outcome}>
+          <Text style={gs.outcomeText}>
+            {lastOutcome.outcome === 'six' ? '🎯 SIX!' :
+             lastOutcome.outcome === 'four' ? '🏃 FOUR!' :
+             lastOutcome.outcome === 'wicket' ? '❌ OUT!' :
+             `✅ ${lastOutcome.runs} run${lastOutcome.runs !== 1 ? 's' : ''}`}
           </Text>
         </View>
+      )}
 
-        {lastOutcome && (
-          <View style={[styles.outcomeBox, { borderColor: getOutcomeColor(lastOutcome) }]}>
-            <Text style={[styles.outcomeText, { color: getOutcomeColor(lastOutcome) }]}>
-              {lastOutcome.outcome.toUpperCase()}
-              {lastOutcome.runs > 0 ? ` — ${lastOutcome.runs} runs` : ''}
-            </Text>
+      <Text style={gs.skillsLabel}>Select Your Shot:</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={gs.skillsRow}>
+        {skills.length > 0 ? skills.map((skill) => (
+          <TouchableOpacity key={skill.id} onPress={() => selectSkill(skill)}
+            style={[gs.skillBtn, selectedSkill?.id === skill.id && gs.skillSelected,
+                    skill.staminaCost > matchContext.batsmanStamina && gs.skillDisabled]}>
+            <Text style={gs.skillName}>{skill.name}</Text>
+            <Text style={gs.skillStats}>PWR {skill.power} | RK {skill.risk}</Text>
+            <Text style={gs.skillCost}>⚡{skill.staminaCost}</Text>
+          </TouchableOpacity>
+        )) : (
+          <View style={gs.skillBtn}>
+            <Text style={{ color: '#aaa', fontSize: 13 }}>Scan a card for skills</Text>
           </View>
         )}
+      </ScrollView>
 
-        <Text style={styles.sectionTitle}>Select Skill</Text>
-        <ScrollView style={styles.skillList} horizontal showsHorizontalScrollIndicator={false}>
-          {availableSkills
-            .filter((s) => s.staminaCost <= matchContext.batsmanStamina)
-            .map((skill) => (
-              <TouchableOpacity
-                key={skill.id}
-                style={[
-                  styles.skillCard,
-                  selectedSkill?.id === skill.id && styles.skillSelected,
-                ]}
-                onPress={() => selectSkill(skill)}
-              >
-                <Text style={styles.skillName}>{skill.name}</Text>
-                <Text style={styles.skillPower}>Power: {skill.power}</Text>
-                <Text style={styles.skillRisk}>Risk: {skill.risk}</Text>
-                <Text style={styles.skillStamina}>Cost: {skill.staminaCost}</Text>
-              </TouchableOpacity>
-            ))}
-        </ScrollView>
-
-        <Button
-          title="Play Ball"
-          onPress={handlePlayBall}
-          size="large"
-          disabled={!selectedSkill}
-          style={styles.playButton}
-        />
-      </View>
-    );
-  }
-
-  // INNINGS BREAK
-  if (phase === 'innings_break' && session) {
-    const firstInnings = session.innings[0];
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.breakTitle}>Innings Break</Text>
-        <Text style={styles.scoreText}>{firstInnings.totalRuns}/{firstInnings.totalWickets}</Text>
-        <Text style={styles.breakSubtitle}>
-          Target: {firstInnings.totalRuns + 1} runs
-        </Text>
-        <Button
-          title="Start 2nd Innings"
-          onPress={handleEndInnings}
-          size="large"
-          style={{ marginTop: 32 }}
-        />
-      </View>
-    );
-  }
-
-  // RESULT PHASE
-  if (phase === 'result' && session) {
-    const first = session.innings[0];
-    const second = session.innings[1];
-    const humanWon = second
-      ? (session.currentInning === 0
-          ? first.totalRuns > 0
-          : second.totalRuns >= first.totalRuns + 1)
-      : false;
-
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.resultTitle}>
-          {humanWon ? 'You Won!' : 'You Lost!'}
-        </Text>
-        <View style={styles.resultScores}>
-          <Text style={styles.resultScore}>
-            1st Innings: {first.totalRuns}/{first.totalWickets}
-          </Text>
-          {second && (
-            <Text style={styles.resultScore}>
-              2nd Innings: {second.totalRuns}/{second.totalWickets}
-            </Text>
-          )}
-        </View>
-        <View style={styles.resultButtons}>
-          <Button
-            title="Rematch"
-            onPress={() => {
-              resetGame();
-              setPhase('setup');
-            }}
-            size="large"
-          />
-          <Button
-            title="Back to Menu"
-            onPress={() => {
-              resetGame();
-              router.back();
-            }}
-            variant="outline"
-            size="large"
-          />
-        </View>
-      </View>
-    );
-  }
-
-  return null;
+      <TouchableOpacity style={[gs.playBtn, !selectedSkill && { opacity: 0.5 }]} onPress={handlePlayBall}>
+        <Text style={gs.playBtnText}>🏏 Play Ball</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 20,
-  },
-  setupContent: {
-    paddingBottom: 40,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  difficultyCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    gap: 12,
-  },
-  difficultySelected: {
-    borderColor: COLORS.primaryLight,
-  },
-  difficultyIcon: {
-    fontSize: 28,
-  },
-  difficultyInfo: {
-    flex: 1,
-  },
-  difficultyName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  difficultyDesc: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  oversRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  overOption: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  overSelected: {
-    borderColor: COLORS.primaryLight,
-  },
-  overText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  overTextSelected: {
-    color: COLORS.primaryLight,
-  },
-  scoreboard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  scoreText: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: COLORS.text,
-  },
-  oversText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  targetText: {
-    fontSize: 14,
-    color: COLORS.secondaryLight,
-    marginTop: 4,
-  },
-  staminaText: {
-    fontSize: 14,
-    color: COLORS.primaryLight,
-    marginTop: 4,
-  },
-  outcomeBox: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  outcomeText: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  skillList: {
-    maxHeight: 120,
-    marginBottom: 16,
-  },
-  skillCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginRight: 10,
-    minWidth: 120,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  skillSelected: {
-    borderColor: COLORS.primaryLight,
-  },
-  skillName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  skillPower: {
-    fontSize: 12,
-    color: COLORS.success,
-  },
-  skillRisk: {
-    fontSize: 12,
-    color: COLORS.warning,
-  },
-  skillStamina: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  playButton: {
-    marginTop: 'auto',
-  },
-  breakTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  breakSubtitle: {
-    fontSize: 18,
-    color: COLORS.secondaryLight,
-    marginTop: 8,
-  },
-  resultTitle: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: COLORS.primaryLight,
-    marginBottom: 24,
-  },
-  resultScores: {
-    gap: 8,
-    marginBottom: 32,
-  },
-  resultScore: {
-    fontSize: 18,
-    color: COLORS.text,
-  },
-  resultButtons: {
-    gap: 12,
-    width: '100%',
-  },
+const gs = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1a1a2e' },
+  title: { color: '#fff', fontSize: 26, fontWeight: 'bold' },
+  sectionLabel: { color: '#f4a261', fontSize: 16, fontWeight: 'bold', marginTop: 8 },
+  option: { backgroundColor: '#16213e', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#333' },
+  optionSelected: { borderColor: '#f4a261', backgroundColor: '#1e2d40' },
+  optionTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  optionDesc: { color: '#aaa', fontSize: 13, marginTop: 4 },
+  overBtn: { flex: 1, backgroundColor: '#16213e', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  overBtnSelected: { backgroundColor: '#f4a261', borderColor: '#f4a261' },
+  overBtnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  startBtn: { backgroundColor: '#f4a261', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
+  startBtnText: { color: '#1a1a2e', fontSize: 18, fontWeight: 'bold' },
+  scoreboard: { backgroundColor: '#16213e', padding: 20, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#333' },
+  score: { color: '#fff', fontSize: 48, fontWeight: 'bold' },
+  overs: { color: '#aaa', fontSize: 16, marginTop: 4 },
+  stamina: { color: '#f4a261', fontSize: 14, marginTop: 4 },
+  outcome: { backgroundColor: '#2d6a4f', margin: 16, borderRadius: 12, padding: 16, alignItems: 'center' },
+  outcomeText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  skillsLabel: { color: '#fff', fontSize: 16, fontWeight: 'bold', paddingHorizontal: 16, marginTop: 16, marginBottom: 8 },
+  skillsRow: { paddingHorizontal: 12, marginBottom: 16 },
+  skillBtn: { backgroundColor: '#16213e', borderRadius: 12, padding: 14, marginHorizontal: 4, minWidth: 120, borderWidth: 1, borderColor: '#333' },
+  skillSelected: { borderColor: '#f4a261', backgroundColor: '#1e2d40' },
+  skillDisabled: { opacity: 0.4 },
+  skillName: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  skillStats: { color: '#aaa', fontSize: 11, marginTop: 4 },
+  skillCost: { color: '#f4a261', fontSize: 11, marginTop: 2 },
+  playBtn: { backgroundColor: '#f4a261', margin: 16, borderRadius: 14, padding: 18, alignItems: 'center' },
+  playBtnText: { color: '#1a1a2e', fontSize: 20, fontWeight: 'bold' },
 });
+

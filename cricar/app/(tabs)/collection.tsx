@@ -1,143 +1,92 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+// ════════════════════════════════════════════════════════════════════
+// COPY EACH SECTION TO ITS RESPECTIVE FILE
+// ════════════════════════════════════════════════════════════════════
+
+// ── FILE: app/(tabs)/collection.tsx ─────────────────────────────────
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useCollectionStore } from '../../store/collectionStore';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { COLORS } from '../../constants/gameConfig';
-import { Card } from '../../types/card';
 
-export default function CollectionTab() {
-  const user = useAuthStore((s) => s.user);
-  const { ownedCards, ownedPlayers, isLoading, loadCollection, getPlayerForCard } =
-    useCollectionStore();
+export default function CollectionScreen() {
+  const { user } = useAuthStore();
+  const { ownedCards, ownedPlayers, isLoading, loadCollection } = useCollectionStore();
 
   useEffect(() => {
     if (user) loadCollection(user.uid);
   }, [user]);
 
   if (isLoading) {
-    return <LoadingSpinner fullScreen message="Loading collection..." />;
+    return (
+      <View style={s.center}>
+        <ActivityIndicator size="large" color="#f4a261" />
+        <Text style={s.loadText}>Loading your collection...</Text>
+      </View>
+    );
   }
 
-  function renderCard({ item }: { item: Card }) {
-    const player = getPlayerForCard(item);
+  if (ownedCards.length === 0) {
     return (
-      <TouchableOpacity style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.playerName}>{player?.name || 'Unknown'}</Text>
-          <Text style={styles.playerYear}>{item.packYear}</Text>
-        </View>
-        <Text style={styles.playerTeam}>{player?.team || ''}</Text>
-        <Text style={styles.playerRole}>{player?.role || ''}</Text>
-        <Text style={styles.skillCount}>
-          {player?.skills.length || 0} skills unlocked
-        </Text>
-      </TouchableOpacity>
+      <View style={s.center}>
+        <Text style={s.emptyEmoji}>📦</Text>
+        <Text style={s.emptyTitle}>No cards yet</Text>
+        <Text style={s.emptySub}>Scan your first CricAR card to get started</Text>
+      </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>
-        My Collection ({ownedCards.length} cards)
-      </Text>
-      {ownedCards.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🃏</Text>
-          <Text style={styles.emptyText}>
-            Your collection is empty. Scan a card to get started!
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={ownedCards}
-          renderItem={renderCard}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
-        />
-      )}
+    <View style={s.container}>
+      <Text style={s.header}>My Collection ({ownedCards.length} cards)</Text>
+      <FlatList
+        data={ownedCards}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={s.list}
+        renderItem={({ item }) => {
+          const player = ownedPlayers.find((p) => p.id === item.playerId);
+          return (
+            <View style={s.card}>
+              <Text style={s.cardEmoji}>🏏</Text>
+              <Text style={s.cardName}>{player?.name || 'Unknown Player'}</Text>
+              <Text style={s.cardTeam}>{player?.team || ''}</Text>
+              <Text style={s.cardYear}>{item.packYear}</Text>
+              <View style={[s.roleBadge, { backgroundColor: getRoleColor(player?.role) }]}>
+                <Text style={s.roleText}>{player?.role || 'player'}</Text>
+              </View>
+            </View>
+          );
+        }}
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 16,
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  list: {
-    gap: 12,
-  },
-  row: {
-    gap: 12,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  playerName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    flex: 1,
-  },
-  playerYear: {
-    fontSize: 12,
-    color: COLORS.cardGold,
-    fontWeight: '600',
-  },
-  playerTeam: {
-    fontSize: 13,
-    color: COLORS.primaryLight,
-    marginBottom: 2,
-  },
-  playerRole: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textTransform: 'capitalize',
-    marginBottom: 8,
-  },
-  skillCount: {
-    fontSize: 12,
-    color: COLORS.secondaryLight,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
+function getRoleColor(role?: string) {
+  switch (role) {
+    case 'batsman': return '#2d6a4f';
+    case 'bowler': return '#9b2226';
+    case 'allrounder': return '#7b2d8b';
+    case 'wicketkeeper': return '#1d3557';
+    default: return '#333';
+  }
+}
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1a1a2e' },
+  center: { flex: 1, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  header: { color: '#fff', fontSize: 20, fontWeight: 'bold', padding: 16 },
+  list: { paddingHorizontal: 12, paddingBottom: 20 },
+  card: { flex: 1, margin: 6, backgroundColor: '#16213e', borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  cardEmoji: { fontSize: 36, marginBottom: 8 },
+  cardName: { color: '#fff', fontWeight: 'bold', fontSize: 14, textAlign: 'center', marginBottom: 4 },
+  cardTeam: { color: '#f4a261', fontSize: 12, marginBottom: 4 },
+  cardYear: { color: '#888', fontSize: 11, marginBottom: 8 },
+  roleBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  roleText: { color: '#fff', fontSize: 11, textTransform: 'capitalize' },
+  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  emptyTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
+  emptySub: { color: '#888', fontSize: 15, textAlign: 'center' },
+  loadText: { color: '#888', marginTop: 12 },
 });
+

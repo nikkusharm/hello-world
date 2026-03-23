@@ -1,4 +1,4 @@
-import database from '@react-native-firebase/database';
+import { getDatabase, ref, set, get, update, push, onValue, off, serverTimestamp as dbTimestamp } from 'firebase/database'; import { rtdb } from './firebase';
 import { matchRoomsRef } from './firebase';
 import { Connection } from '../types/match';
 import { Skill } from '../types/game';
@@ -223,25 +223,14 @@ export function setupDisconnectHandler(
 }
 
 // Save match state to Firestore after every ball (survives app crashes)
-export async function saveMatchState(
-  sessionId: string,
-  ballData: {
-    over: number;
-    ball: number;
-    batsmanSkill: Skill;
-    bowlerSkill: Skill;
-    outcome: string;
-    runs: number;
-  }
-): Promise<void> {
-  const { default: firestoreModule } = await import('@react-native-firebase/firestore');
-  const db = firestoreModule();
-  await db
-    .collection('sessions')
-    .doc(sessionId)
-    .collection('balls')
-    .add({
-      ...ballData,
-      timestamp: firestoreModule.FieldValue.serverTimestamp(),
-    });
+export async function saveMatchState(sessionId: string, ballData: {
+  over: number; ball: number; batsmanSkill: any;
+  bowlerSkill: any; outcome: string; runs: number;
+}): Promise<void> {
+  const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+  const { db } = await import('./firebase');
+  await addDoc(collection(db, 'sessions', sessionId, 'balls'), {
+    ...ballData,
+    timestamp: serverTimestamp(),
+  });
 }
