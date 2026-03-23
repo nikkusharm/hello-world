@@ -42,4 +42,3 @@ dependencies {
     implementation("com.facebook.react:hermes-android")
 }
 
-apply from: new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../index.js")
