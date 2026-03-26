@@ -7,7 +7,7 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 react {
     entryFile = file("../../index.js")
     cliFile = new File("../node_modules/@expo/cli/build/bin/cli")
-    bundleCommand = "export:embed"
+    bundleCommand = "bundle"
     autolinkLibrariesWithApp()
 }
 def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
