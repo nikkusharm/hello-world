@@ -7,12 +7,12 @@ import { getDatabase, ref } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey:            process.env.EXPO_PUBLIC_FIREBASE_API_KEY            || 'AIzaSyBAwG2rEWpJWPGFa2FvTwDzuc7aB_5QDIk',
-  authDomain:        process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN        || 'your-project.firebaseapp.com',
-  projectId:         process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID         || 'your-project-id',
-  storageBucket:     process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET     || 'your-project.appspot.com',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID|| 'your-sender-id',
-  appId:             process.env.EXPO_PUBLIC_FIREBASE_APP_ID             || 'your-app-id',
-  databaseURL:       process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL       || 'https://your-project-default-rtdb.firebaseio.com',
+  authDomain:        process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN        || cricar-4041b.firebaseapp.com',
+  projectId:         process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID         || 'cricar-4041b',
+  storageBucket:     process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET     || 'cricar-4041b.firebasestorage.app',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID|| '884387305478',
+  appId:             process.env.EXPO_PUBLIC_FIREBASE_APP_ID             || '1:884387305478:android:4d3e26845a4e8234ad8b87',
+  databaseURL:       process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL       || 'https://cricar-4041b-default-rtdb.asia-southeast1.firebasedatabase.app',
 };
 
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
