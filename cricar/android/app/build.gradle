@@ -45,11 +45,12 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
-    packagingOptions {
-        jniLibs {
-            useLegacyPackaging false
-        }
+   packagingOptions {
+    jniLibs {
+        useLegacyPackaging true
     }
+    pickFirsts += ['**/libreact_featureflagsjni.so']
+}
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
