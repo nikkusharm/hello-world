@@ -28,10 +28,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   initialize: () => {
+  try {
     onAuthStateChanged(auth, (user) => {
       set({ user, loading: false });
     });
-  },
+  } catch (e: any) {
+    console.error('Firebase init error:', e);
+    set({ loading: false, error: e.message });
+  }
+},
 
   signIn: async (email, password) => {
     try {
