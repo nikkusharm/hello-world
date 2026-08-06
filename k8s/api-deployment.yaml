@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: creo-copilot-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: creo-copilot-api
+  template:
+    metadata:
+      labels:
+        app: creo-copilot-api
+    spec:
+      containers:
+        - name: api
+          image: creo-copilot-api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: creo-copilot-secrets
