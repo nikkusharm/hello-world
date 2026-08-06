@@ -1,0 +1,1 @@
+{"scripts":{"lint":"next lint"},"dependencies":{"@types/node":"latest","@types/react":"latest","next":"latest","react":"latest","react-dom":"latest","tailwindcss":"latest"},"devDependencies":{}}
