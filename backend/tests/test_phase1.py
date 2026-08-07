@@ -25,7 +25,12 @@ def test_user_project_audit_flow() -> None:
 
     project_response = client.post(
         "/api/v1/projects",
-        json={"code": "PTC-001", "name": "Creo Pilot", "customer": "Internal", "owner_id": user_id},
+        json={
+            "code": "PTC-001",
+            "name": "Creo Pilot",
+            "customer": "Internal",
+            "owner_id": user_id,
+        },
     )
     assert project_response.status_code == 201
 

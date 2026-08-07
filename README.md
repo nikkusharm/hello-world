@@ -4,22 +4,25 @@ Enterprise AI Engineering Copilot for PTC Creo that assists engineers, automates
 
 ## Current Scope: Phase 1 Foundation
 
-This repository now contains the first production-oriented foundation slice:
+This repository contains the first production-oriented foundation slice:
 
 - FastAPI backend scaffold using clean architecture boundaries.
 - SQLAlchemy domain models for users, projects, role management, and audit logs.
 - Repository pattern for persistence access.
 - Environment-driven settings for database, Redis, JWT, and feature flags.
 - OpenAPI-ready Phase 1 endpoints.
+- Docker Compose stack for API, PostgreSQL, and Redis.
 - Initial architecture, API contract, and UI wireframe documentation.
 - Automated tests for health checks and the user/project/audit flow.
 
 ## Run Locally with Docker
 
-Docker is the easiest way to run the current backend because it starts the API, PostgreSQL, and Redis together.
+Docker is the easiest way to run the backend because it starts the API, PostgreSQL, and Redis together.
 
 ```bash
-docker compose up --build
+docker compose down --remove-orphans
+docker compose build --no-cache
+docker compose up
 ```
 
 After the logs show Uvicorn is running, open:
@@ -38,7 +41,7 @@ docker compose down
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+pip install -r requirements-dev.txt
 PYTHONPATH=backend pytest
 PYTHONPATH=backend uvicorn app.main:app --reload --app-dir backend
 ```
@@ -48,7 +51,7 @@ On Windows PowerShell, use:
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 $env:PYTHONPATH="backend"
 pytest
 uvicorn app.main:app --reload --app-dir backend
@@ -56,12 +59,13 @@ uvicorn app.main:app --reload --app-dir backend
 
 ## If http://localhost:8000/docs Does Not Open
 
-1. Confirm the server is running and the terminal is still open.
-2. Check Docker containers with `docker compose ps`.
-3. Check backend logs with `docker compose logs api`.
-4. Confirm port 8000 is not already used by another app.
-5. Try the health URL first: <http://localhost:8000/health>.
-6. If you are running Python locally, confirm dependencies installed successfully with `pip install -e '.[dev]'`.
+1. Confirm Docker Desktop is running.
+2. Confirm the terminal running `docker compose up` is still open.
+3. Check Docker containers with `docker compose ps`.
+4. Check backend logs with `docker compose logs api`.
+5. Rebuild without cache using `docker compose build --no-cache`.
+6. Confirm port 8000 is not already used by another app.
+7. Try the health URL first: <http://localhost:8000/health>.
 
 ## Target Architecture
 

@@ -44,8 +44,21 @@ class AuditRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def record(self, action: AuditAction, entity_type: str, entity_id: str, details: dict[str, object], actor_id: int | None = None) -> AuditLog:
-        log = AuditLog(actor_id=actor_id, action=action, entity_type=entity_type, entity_id=entity_id, details=json.dumps(details, sort_keys=True))
+    def record(
+        self,
+        action: AuditAction,
+        entity_type: str,
+        entity_id: str,
+        details: dict[str, object],
+        actor_id: int | None = None,
+    ) -> AuditLog:
+        log = AuditLog(
+            actor_id=actor_id,
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            details=json.dumps(details, sort_keys=True),
+        )
         self.db.add(log)
         self.db.commit()
         self.db.refresh(log)
